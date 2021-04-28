@@ -33,26 +33,56 @@ describe(Support.getTestDialectTeaser('SQL'), () => {
         timestamps: false
       }).schema('bar');
 
+      const BarUserPermission = current.define('permission', {
+        user_id: {
+          type: DataTypes.INTEGER,
+          references: { model: BarUser },
+          onUpdate: 'CASCADE',
+          onDelete: 'CASCADE'
+        }
+      }, {
+        timestamps: false
+      }).schema('bar');
+
       const BarProject = current.define('project', {
         user_id: {
           type: DataTypes.INTEGER,
           references: { model: BarUser },
           onUpdate: 'CASCADE',
-          onDelete: 'NO ACTION'
+          onDelete: 'CASCADE'
         }
       }, {
         timestamps: false
       }).schema('bar');
 
       BarProject.belongsTo(BarUser, { foreignKey: 'user_id' });
+      BarUserPermission.belongsTo(BarUser, { foreignKey: 'user_id' });
 
       it('references right schema when adding foreign key #9029', () => {
         expectsql(sql.createTableQuery(BarProject.getTableName(), sql.attributesToSQL(BarProject.rawAttributes), { }), {
-          sqlite: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` INTEGER REFERENCES `bar.users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE);',
-          postgres: 'CREATE TABLE IF NOT EXISTS "bar"."projects" ("id"   SERIAL , "user_id" INTEGER REFERENCES "bar"."users" ("id") ON DELETE NO ACTION ON UPDATE CASCADE, PRIMARY KEY ("id"));',
-          mariadb: 'CREATE TABLE IF NOT EXISTS `bar`.`projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar`.`users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE) ENGINE=InnoDB;',
-          mysql: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar.users` (`id`) ON DELETE NO ACTION ON UPDATE CASCADE) ENGINE=InnoDB;',
-          mssql: 'IF OBJECT_ID(\'[bar].[projects]\', \'U\') IS NULL CREATE TABLE [bar].[projects] ([id] INTEGER NOT NULL IDENTITY(1,1) , [user_id] INTEGER NULL, PRIMARY KEY ([id]), FOREIGN KEY ([user_id]) REFERENCES [bar].[users] ([id]) ON DELETE NO ACTION);'
+          sqlite: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` INTEGER REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE);',
+          postgres: 'CREATE TABLE IF NOT EXISTS "bar"."projects" ("id"   SERIAL , "user_id" INTEGER REFERENCES "bar"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));',
+          mariadb: 'CREATE TABLE IF NOT EXISTS `bar`.`projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar`.`users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mysql: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mssql: 'IF OBJECT_ID(\'[bar].[projects]\', \'U\') IS NULL CREATE TABLE [bar].[projects] ([id] INTEGER NOT NULL IDENTITY(1,1) , [user_id] INTEGER NULL, PRIMARY KEY ([id]), FOREIGN KEY ([user_id]) REFERENCES [bar].[users] ([id]) ON DELETE CASCADE);'
+        });
+      });
+
+      it('fix mssql issue with ON DELETE foreign key constraints #10125', () => {
+        expectsql(sql.createTableQuery(BarProject.getTableName(), sql.attributesToSQL(BarProject.rawAttributes), { }), {
+          sqlite: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` INTEGER REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE);',
+          postgres: 'CREATE TABLE IF NOT EXISTS "bar"."projects" ("id"   SERIAL , "user_id" INTEGER REFERENCES "bar"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));',
+          mariadb: 'CREATE TABLE IF NOT EXISTS `bar`.`projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar`.`users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mysql: 'CREATE TABLE IF NOT EXISTS `bar.projects` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mssql: 'IF OBJECT_ID(\'[bar].[projects]\', \'U\') IS NULL CREATE TABLE [bar].[projects] ([id] INTEGER NOT NULL IDENTITY(1,1) , [user_id] INTEGER NULL, PRIMARY KEY ([id]), FOREIGN KEY ([user_id]) REFERENCES [bar].[users] ([id]) ON DELETE CASCADE);'
+        });
+
+        expectsql(sql.createTableQuery(BarUserPermission.getTableName(), sql.attributesToSQL(BarUserPermission.rawAttributes), { }), {
+          sqlite: 'CREATE TABLE IF NOT EXISTS `bar.permissions` (`id` INTEGER PRIMARY KEY AUTOINCREMENT, `user_id` INTEGER REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE);',
+          postgres: 'CREATE TABLE IF NOT EXISTS "bar"."permissions" ("id"   SERIAL , "user_id" INTEGER REFERENCES "bar"."users" ("id") ON DELETE CASCADE ON UPDATE CASCADE, PRIMARY KEY ("id"));',
+          mariadb: 'CREATE TABLE IF NOT EXISTS `bar`.`permissions` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar`.`users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mysql: 'CREATE TABLE IF NOT EXISTS `bar.permissions` (`id` INTEGER NOT NULL auto_increment , `user_id` INTEGER, PRIMARY KEY (`id`), FOREIGN KEY (`user_id`) REFERENCES `bar.users` (`id`) ON DELETE CASCADE ON UPDATE CASCADE) ENGINE=InnoDB;',
+          mssql: 'IF OBJECT_ID(\'[bar].[permissions]\', \'U\') IS NULL CREATE TABLE [bar].[permissions] ([id] INTEGER NOT NULL IDENTITY(1,1) , [user_id] INTEGER NULL, PRIMARY KEY ([id]), FOREIGN KEY ([user_id]) REFERENCES [bar].[users] ([id]) ON DELETE CASCADE); '
         });
       });
     });
